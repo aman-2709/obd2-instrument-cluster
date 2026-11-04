@@ -1,6 +1,7 @@
 import React, { useId } from 'react';
 import { ObdData, SpeedUnit } from '../types';
-import { arcPath, clamp, polar, SmallGaugeScale, SpeedTicks, useTachometer } from './clusterGeometry';
+import { clamp, RPM_SCALE, SmallGaugeScale, SPEED_SCALE } from './clusterGeometry';
+import Dial from './Dial';
 import TemperatureIcon from './TemperatureIcon';
 import OilTemperatureIcon from './OilTemperatureIcon';
 import { activeTheme, ClusterTheme } from './clusterTheme';
@@ -17,7 +18,9 @@ const readNumber = (value: string | undefined, fallback: number): number => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
-// Geometry and styling ported directly from docs/design/MustangDashboard_992026.html.
+// Geometry and styling ported from docs/design/MustangDashboard_992026.html, except the
+// tachometer: version 3 draws it as a round dial on the left, the mirror of the km/h dial, where
+// the reference has a strip across the top. The gear sits in the middle of that dial.
 const MustangDashboard: React.FC<Props> = ({ data, speedUnit, theme = activeTheme() }) => {
   const prefix = useId();
   const id = (name: string) => `${prefix}-${name}`;
@@ -37,11 +40,6 @@ const MustangDashboard: React.FC<Props> = ({ data, speedUnit, theme = activeThem
   const coolantPercent = clamp((coolantTemp - 100) / 160) * 100;
   const distanceUnit = speedUnit === 'mph' ? 'mi' : 'km';
   const speedUnitName = speedUnit === 'mph' ? 'miles per hour' : 'kilometers per hour';
-  const rpmRatio = clamp(rpm / 9000);
-  const tach = useTachometer(rpmRatio);
-  const speedAngle = 135 + 270 * clamp(speed / 160);
-  const speedInner = polar(1480, 360, 181, speedAngle);
-  const speedOuter = polar(1480, 360, 229, speedAngle);
   const summary = `${Math.round(speed)} ${speedUnitName}, ${Math.round(rpm)} RPM, gear ${gear}. Transmission temperature, oil pressure, engine temperature, odometer, range, coolant and fuel.`;
   const styles = {
     '--cluster-text-shadow': url('textShadow'),
@@ -141,96 +139,82 @@ const MustangDashboard: React.FC<Props> = ({ data, speedUnit, theme = activeThem
         <path d="M105 161 C462 78 1288 100 1794 177" fill="none" stroke="#fff" strokeOpacity=".035" strokeWidth="20"/>
       </g>
 
-      <path d="M404 163 H1353 C1391 163 1424 178 1448 203
-               C1320 229 1238 343 1238 469 C1238 520 1252 568 1279 607
-               H283 C247 574 226 526 218 477 C194 329 249 205 365 171
-               C378 166 391 163 404 163 Z"
-            fill="#020405" stroke="#50606a" strokeWidth="1.4"/>
-
       <g id={id("tachometer")} className="boot" aria-label={`Tachometer ${Math.round(rpm)} RPM`}>
-        <path id={id("tachBase")} d="M238 485 C188 371 207 249 304 194 C346 170 397 166 466 170 L1355 170"
-              fill="none" stroke="#27333b" strokeWidth="31" opacity=".75"/>
-        <path id={id("tachFill")} d="M238 485 C188 371 207 249 304 194 C346 170 397 166 466 170 L1355 170"
-              pathLength="1000" fill="none" stroke={url("blueBand")} strokeWidth="30"
-              strokeDasharray={`${(rpmRatio * 1000).toFixed(2)} 1000`} className="blue-glow" opacity=".93"/>
-        <path ref={tach.pathRef} id={id("tachRim")} d="M238 485 C188 371 207 249 304 194 C346 170 397 166 466 170 L1355 170"
-              fill="none" stroke="#8fa2b0" strokeWidth="1.4"/>
-        <g id={id("tachTicks")}>{tach.ticks}</g>
-        {tach.marker && <line id={id("tachMarker")} {...tach.marker}
-              stroke={theme.tachMarker} strokeWidth="4" filter={url("blueGlow")}/>}
-        <text x="1160" y="268" className="small">RPM x 1000</text>
+        <Dial name="tach" id={id} cx={440} cy={360} scale={RPM_SCALE} value={rpm}
+              band={url("blueBand")} glass={url("glass")} glow={url("blueGlow")} markerColor={theme.tachMarker}>
+          <text x="440" y="327" textAnchor="middle" className="label">RPM x 1000</text>
+          <g aria-label={`Selected gear ${gear}`}>
+            <text id={id("gearValue")} x="440" y="430" textAnchor="middle" fontSize="126"
+                  fontWeight="300" className="metal-value value-shadow">{gear}</text>
+            <g transform="translate(403 450)" fill={url("sportBadgeSilver")} aria-label="Sport Plus">
+              <path d="M21 0 H50 L46 7 H22 Q17 7 16 10 H36 Q46 10 44 17 L42 22 Q39 27 32 27 H0 L5 20 H31 Q35 20 36 17 H16 Q5 17 8 10 L10 6 Q13 0 21 0 Z"/>
+              <path d="M61 0 H68 L66 6 H73 L71 12 H64 L62 19 H55 L57 12 H50 L52 6 H59 Z"/>
+            </g>
+          </g>
+        </Dial>
       </g>
 
       <g className="boot-delay">
-        <path d="M403 276 H1273" stroke="#8d9aa3" strokeOpacity=".8" strokeWidth="1"/>
-        <path d="M283 578 H1274" stroke="#49545b" strokeWidth="1"/>
-        <path d="M587 300 V548" stroke="#1d2429" strokeWidth="1"/>
+        <path d="M570 578 H1274" stroke="#49545b" strokeWidth="1"/>
 
-        <g aria-label={`Selected gear ${gear}`}>
-          <text x="419" y="337" textAnchor="middle" className="label">GEAR</text>
-          <text id={id("gearValue")} x="420" y="458" textAnchor="middle" fontSize="126"
-                fontWeight="300" className="metal-value value-shadow">{gear}</text>
-          <g transform="translate(383 481)" fill={url("sportBadgeSilver")} aria-label="Sport Plus">
-            <path d="M21 0 H50 L46 7 H22 Q17 7 16 10 H36 Q46 10 44 17 L42 22 Q39 27 32 27 H0 L5 20 H31 Q35 20 36 17 H16 Q5 17 8 10 L10 6 Q13 0 21 0 Z"/>
-            <path d="M61 0 H68 L66 6 H73 L71 12 H64 L62 19 H55 L57 12 H50 L52 6 H59 Z"/>
+        {/* The three small gauges are drawn around x = 705, 913 and 1121. Each is shifted so they
+            sit 190 apart, centred between the two dials, 34 px clear of each. */}
+        <g transform="translate(65 0)">
+          <g id={id("transGauge")} aria-label={`Transmission temperature ${Math.round(transTemp)} degrees Fahrenheit`}>
+            <circle cx="705" cy="397" r="75" fill="#030506" stroke="#77818a" strokeWidth="1.5"/>
+            <SmallGaugeScale cx={705} value={transTemp} min={100} max={300} blueBand={url("blueBand")} />
+            <circle cx="705" cy="397" r="27" fill="none" stroke="#d8dde0" strokeWidth="6"/>
+            <circle cx="705" cy="397" r="11" fill="none" stroke="#d8dde0" strokeWidth="4"/>
+            <g stroke="#d8dde0" strokeWidth="5">
+              <path d="M705 362 V373 M705 421 V432 M670 397 H681 M729 397 H740"/>
+              <path d="M680 373 L688 381 M722 413 L730 421 M680 421 L688 413 M722 381 L730 373"/>
+            </g>
+            <path d="M709 379 V404 A8 8 0 1 1 701 404 V379 A4 4 0 0 1 709 379 Z"
+                  fill="#d8dde0"/>
+            <text x="705" y="464" textAnchor="middle" className="small">°F</text>
+            <text x="654" y="496" textAnchor="middle" className="label">100</text>
+            <text x="756" y="496" textAnchor="middle" className="label">300</text>
+            <text x="705" y="532" textAnchor="middle" className="small">TRANS TEMP</text>
           </g>
         </g>
 
-        <g id={id("transGauge")} aria-label={`Transmission temperature ${Math.round(transTemp)} degrees Fahrenheit`}>
-          <circle cx="705" cy="397" r="75" fill="#030506" stroke="#77818a" strokeWidth="1.5"/>
-          <SmallGaugeScale cx={705} value={transTemp} min={100} max={300} blueBand={url("blueBand")} />
-          <circle cx="705" cy="397" r="27" fill="none" stroke="#d8dde0" strokeWidth="6"/>
-          <circle cx="705" cy="397" r="11" fill="none" stroke="#d8dde0" strokeWidth="4"/>
-          <g stroke="#d8dde0" strokeWidth="5">
-            <path d="M705 362 V373 M705 421 V432 M670 397 H681 M729 397 H740"/>
-            <path d="M680 373 L688 381 M722 413 L730 421 M680 421 L688 413 M722 381 L730 373"/>
+        <g transform="translate(47 0)">
+          <g id={id("oilGauge")} aria-label={Number.isFinite(oilPressure) ? `Oil pressure ${Math.round(oilPressure)} PSI` : "Oil pressure unavailable"}>
+            <circle cx="913" cy="397" r="75" fill="#030506" stroke="#77818a" strokeWidth="1.5"/>
+            <SmallGaugeScale cx={913} value={oilPressure} min={0} max={100} blueBand={url("blueBand")} />
+            <OilTemperatureIcon transform="translate(879 370) scale(1.25)" />
+            <text x="863" y="496" textAnchor="middle" className="label">L</text>
+            <text x="963" y="496" textAnchor="middle" className="label">H</text>
+            <text x="913" y="532" textAnchor="middle" className="small">OIL PRESS</text>
           </g>
-          <path d="M709 379 V404 A8 8 0 1 1 701 404 V379 A4 4 0 0 1 709 379 Z"
-                fill="#d8dde0"/>
-          <text x="705" y="464" textAnchor="middle" className="small">°F</text>
-          <text x="654" y="496" textAnchor="middle" className="label">100</text>
-          <text x="756" y="496" textAnchor="middle" className="label">300</text>
-          <text x="705" y="532" textAnchor="middle" className="small">TRANS TEMP</text>
         </g>
 
-        <g id={id("oilGauge")} aria-label={Number.isFinite(oilPressure) ? `Oil pressure ${Math.round(oilPressure)} PSI` : "Oil pressure unavailable"}>
-          <circle cx="913" cy="397" r="75" fill="#030506" stroke="#77818a" strokeWidth="1.5"/>
-          <SmallGaugeScale cx={913} value={oilPressure} min={0} max={100} blueBand={url("blueBand")} />
-          <OilTemperatureIcon transform="translate(879 370) scale(1.25)" />
-          <text x="863" y="496" textAnchor="middle" className="label">L</text>
-          <text x="963" y="496" textAnchor="middle" className="label">H</text>
-          <text x="913" y="532" textAnchor="middle" className="small">OIL PRESS</text>
-        </g>
-
-        <g id={id("engineGauge")} aria-label={`Engine temperature ${Math.round(engineTemp)} degrees Fahrenheit`}>
-          <circle cx="1121" cy="397" r="75" fill="#030506" stroke="#77818a" strokeWidth="1.5"/>
-          <SmallGaugeScale cx={1121} value={engineTemp} min={140} max={340} blueBand={url("blueBand")} />
-          <TemperatureIcon transform="translate(1089 367)" />
-          <text x="1121" y="464" textAnchor="middle" className="small">°F</text>
-          <text x="1070" y="496" textAnchor="middle" className="label">140</text>
-          <text x="1172" y="496" textAnchor="middle" className="label">340</text>
-          <text x="1121" y="532" textAnchor="middle" className="small">ENG TEMP</text>
+        <g transform="translate(29 0)">
+          <g id={id("engineGauge")} aria-label={`Engine temperature ${Math.round(engineTemp)} degrees Fahrenheit`}>
+            <circle cx="1121" cy="397" r="75" fill="#030506" stroke="#77818a" strokeWidth="1.5"/>
+            <SmallGaugeScale cx={1121} value={engineTemp} min={140} max={340} blueBand={url("blueBand")} />
+            <TemperatureIcon transform="translate(1089 367)" />
+            <text x="1121" y="464" textAnchor="middle" className="small">°F</text>
+            <text x="1070" y="496" textAnchor="middle" className="label">140</text>
+            <text x="1172" y="496" textAnchor="middle" className="label">340</text>
+            <text x="1121" y="532" textAnchor="middle" className="small">ENG TEMP</text>
+          </g>
         </g>
       </g>
 
       <g id={id("speedometer")} className="boot" aria-label={`Speed ${Math.round(speed)} ${speedUnitName}`}>
-        <circle cx="1480" cy="360" r="224" fill="#020405" stroke="#93a7b5" strokeWidth="1.4"/>
-        <circle cx="1480" cy="360" r="205" fill="none" stroke="#1a242c" strokeWidth="47"/>
-        <path id={id("speedArc")} d={arcPath(1480, 360, 205, 135, speedAngle)} fill="none" stroke={url("blueBand")} strokeWidth="47" className="blue-glow"/>
-        <g id={id("speedTicks")}><SpeedTicks /></g>
-        <line id={id("speedMarker")} x1={speedInner.x} y1={speedInner.y} x2={speedOuter.x} y2={speedOuter.y} stroke={theme.speedMarker} strokeWidth="5" strokeLinecap="square"
-              filter={url("blueGlow")}/>
-        <circle cx="1480" cy="360" r="132" fill="#020405" stroke="#7c8790" strokeWidth="2.5"/>
-        <circle cx="1480" cy="360" r="122" fill={url("glass")} stroke="#252c31" strokeWidth="1"/>
-        <text x="1480" y="327" textAnchor="middle" className="label">{speedUnit.toUpperCase()}</text>
-        <text id={id("speedValue")} x="1480" y="445" textAnchor="middle" fontSize="126"
-              fontWeight="300" className="metal-value value-shadow">{Math.round(speed)}</text>
-        <text x="1480" y="492" textAnchor="middle" className="label">{speedUnit.toUpperCase()}</text>
+        <Dial name="speed" id={id} cx={1480} cy={360} scale={SPEED_SCALE} value={speed}
+              band={url("blueBand")} glass={url("glass")} glow={url("blueGlow")} markerColor={theme.speedMarker}>
+          <text x="1480" y="327" textAnchor="middle" className="label">{speedUnit.toUpperCase()}</text>
+          <text id={id("speedValue")} x="1480" y="445" textAnchor="middle" fontSize="126"
+                fontWeight="300" className="metal-value value-shadow">{Math.round(speed)}</text>
+          <text x="1480" y="492" textAnchor="middle" className="label">{speedUnit.toUpperCase()}</text>
+        </Dial>
       </g>
 
       <g className="boot-delay">
-        <path d="M282 575 H1277" stroke="#11181e" strokeWidth="6"/>
-        <path d="M285 578 H1277" stroke="#64717a" strokeOpacity=".52" strokeWidth="1"/>
+        <path d="M570 575 H1277" stroke="#11181e" strokeWidth="6"/>
+        <path d="M573 578 H1277" stroke="#64717a" strokeOpacity=".52" strokeWidth="1"/>
 
         <g aria-label={`Coolant temperature ${Math.round(coolantTemp)} degrees Fahrenheit`}>
           <text x="315" y="614" className="label">C</text>

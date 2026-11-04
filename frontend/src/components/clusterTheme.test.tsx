@@ -167,6 +167,7 @@ describe('cluster themes', () => {
 
       expect(bandStops(container)).toEqual(blueTheme.band.map(([offset, color]) => [offset, color]));
       expect(container.querySelector('[id$="-speedMarker"]')).toHaveAttribute('stroke', blueTheme.speedMarker);
+      expect(container.querySelector('[id$="-tachMarker"]')).toHaveAttribute('stroke', blueTheme.tachMarker);
       expect(container.querySelectorAll(`g[stroke="${blueTheme.tick}"]`)).toHaveLength(2);
       expect(container.querySelector(`ellipse[fill="${blueTheme.glow}"]`)).toBeInTheDocument();
       expect(container.querySelector(`ellipse[fill="${blueTheme.tint}"]`)).toBeInTheDocument();
@@ -177,6 +178,7 @@ describe('cluster themes', () => {
 
       expect(bandStops(container)).toEqual(greenTheme.band.map(([offset, color]) => [offset, color]));
       expect(container.querySelector('[id$="-speedMarker"]')).toHaveAttribute('stroke', greenTheme.speedMarker);
+      expect(container.querySelector('[id$="-tachMarker"]')).toHaveAttribute('stroke', greenTheme.tachMarker);
       expect(container.querySelectorAll(`g[stroke="${greenTheme.tick}"]`)).toHaveLength(2);
       expect(container.querySelector(`ellipse[fill="${greenTheme.glow}"]`)).toBeInTheDocument();
       expect(container.querySelector(`ellipse[fill="${greenTheme.tint}"]`)).toBeInTheDocument();
@@ -197,7 +199,7 @@ describe('cluster themes', () => {
     });
 
     test.each([
-      ['tachometer fill', '-tachFill'],
+      ['tachometer arc', '-tachArc'],
       ['speed arc', '-speedArc'],
       ['coolant arc', '-coolantArc'],
       ['fuel arc', '-fuelArc'],

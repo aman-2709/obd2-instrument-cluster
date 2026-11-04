@@ -58,7 +58,7 @@ describe('MustangDashboard', () => {
       .toHaveAttribute('viewBox', '0 0 1920 720');
     expect(container.querySelectorAll('svg')).toHaveLength(1);
     expect(screen.getByText('RPM x 1000')).toBeInTheDocument();
-    expect(screen.getByText('GEAR')).toBeInTheDocument();
+    expect(screen.queryByText('GEAR')).not.toBeInTheDocument();
     expect(screen.getByText('TRANS TEMP')).toBeInTheDocument();
     expect(screen.getByText('OIL PRESS')).toBeInTheDocument();
     expect(screen.getByText('ENG TEMP')).toBeInTheDocument();
@@ -118,14 +118,16 @@ describe('MustangDashboard', () => {
     expect(screen.getByLabelText('Coolant temperature 260 degrees Fahrenheit')).toBeInTheDocument();
     expect(container.querySelector('[id$="-coolantArc"]')).toHaveAttribute('stroke-dasharray', '100 100');
     expect(container.querySelector('[id$="-fuelArc"]')).toHaveAttribute('stroke-dasharray', '100 100');
-    expect(container.querySelector('[id$="-tachFill"]')).toHaveAttribute('stroke-dasharray', '1000.00 1000');
+    // Past the end of the scale the RPM arc stops at the end of the 270 degree sweep.
+    expect(container.querySelector('[id$="-tachArc"]')).toHaveAttribute('d', 'M 295.04 504.96 A 205 205 0 1 1 584.96 504.96');
 
     rerender(<MustangDashboard data={{
       RPM: '-100', Speed: 'invalid', FuelLevel: '-20', CoolantTemp: 'Infinity',
     }} speedUnit="km/h" />);
 
     expect(container.querySelector('[id$="-fuelArc"]')).toHaveAttribute('stroke-dasharray', '0 100');
-    expect(container.querySelector('[id$="-tachFill"]')).toHaveAttribute('stroke-dasharray', '0.00 1000');
+    // A negative reading draws an empty arc, a zero length one at the start of the sweep.
+    expect(container.querySelector('[id$="-tachArc"]')).toHaveAttribute('d', 'M 295.04 504.96 A 205 205 0 0 1 295.04 504.96');
     expect(screen.getByLabelText('Speed 0 kilometers per hour')).toBeInTheDocument();
     expect(container.innerHTML).not.toMatch(/NaN|Infinity/);
   });
