@@ -3,11 +3,13 @@ import { ObdData, SpeedUnit } from '../types';
 import { arcPath, clamp, polar, SmallGaugeScale, SpeedTicks, useTachometer } from './clusterGeometry';
 import TemperatureIcon from './TemperatureIcon';
 import OilTemperatureIcon from './OilTemperatureIcon';
+import { activeTheme, ClusterTheme } from './clusterTheme';
 import './MustangDashboard.css';
 
 interface Props {
   data: ObdData;
   speedUnit: SpeedUnit;
+  theme?: ClusterTheme;
 }
 
 const readNumber = (value: string | undefined, fallback: number): number => {
@@ -16,7 +18,7 @@ const readNumber = (value: string | undefined, fallback: number): number => {
 };
 
 // Geometry and styling ported directly from docs/design/MustangDashboard_992026.html.
-const MustangDashboard: React.FC<Props> = ({ data, speedUnit }) => {
+const MustangDashboard: React.FC<Props> = ({ data, speedUnit, theme = activeTheme() }) => {
   const prefix = useId();
   const id = (name: string) => `${prefix}-${name}`;
   const url = (name: string) => `url(#${id(name)})`;
@@ -77,11 +79,7 @@ const MustangDashboard: React.FC<Props> = ({ data, speedUnit }) => {
           <stop offset="1" stopColor="#000"/>
         </radialGradient>
         <linearGradient id={id("blueBand")} x1="0" y1="1" x2="1" y2="0">
-          <stop offset="0" stopColor="#00142d"/>
-          <stop offset=".38" stopColor="#003f92"/>
-          <stop offset=".72" stopColor="#008dff"/>
-          <stop offset=".90" stopColor="#0fb8ff"/>
-          <stop offset="1" stopColor="#e8fbff"/>
+          {theme.band.map(([offset, color]) => <stop key={offset} offset={offset} stopColor={color}/>)}
         </linearGradient>
         <linearGradient id={id("silverText")} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#fff"/>
@@ -137,8 +135,8 @@ const MustangDashboard: React.FC<Props> = ({ data, speedUnit }) => {
       </g>
 
       <g clipPath={url("clusterClip")}>
-        <ellipse cx="955" cy="330" rx="800" ry="290" fill="#07131d" opacity=".18"/>
-        <ellipse cx="950" cy="680" rx="590" ry="110" fill="#0078ff" opacity=".045" filter={url("softGlow")}/>
+        <ellipse cx="955" cy="330" rx="800" ry="290" fill={theme.tint} opacity=".18"/>
+        <ellipse cx="950" cy="680" rx="590" ry="110" fill={theme.glow} opacity=".045" filter={url("softGlow")}/>
         <rect x="25" y="69" width="1870" height="620" fill={url("microTexture")} opacity=".17"/>
         <path d="M105 161 C462 78 1288 100 1794 177" fill="none" stroke="#fff" strokeOpacity=".035" strokeWidth="20"/>
       </g>
@@ -159,7 +157,7 @@ const MustangDashboard: React.FC<Props> = ({ data, speedUnit }) => {
               fill="none" stroke="#8fa2b0" strokeWidth="1.4"/>
         <g id={id("tachTicks")}>{tach.ticks}</g>
         {tach.marker && <line id={id("tachMarker")} {...tach.marker}
-              stroke="#ecfaff" strokeWidth="4" filter={url("blueGlow")}/>}
+              stroke={theme.tachMarker} strokeWidth="4" filter={url("blueGlow")}/>}
         <text x="1160" y="268" className="small">RPM x 1000</text>
       </g>
 
@@ -220,7 +218,7 @@ const MustangDashboard: React.FC<Props> = ({ data, speedUnit }) => {
         <circle cx="1480" cy="360" r="205" fill="none" stroke="#1a242c" strokeWidth="47"/>
         <path id={id("speedArc")} d={arcPath(1480, 360, 205, 135, speedAngle)} fill="none" stroke={url("blueBand")} strokeWidth="47" className="blue-glow"/>
         <g id={id("speedTicks")}><SpeedTicks /></g>
-        <line id={id("speedMarker")} x1={speedInner.x} y1={speedInner.y} x2={speedOuter.x} y2={speedOuter.y} stroke="#e8fbff" strokeWidth="5" strokeLinecap="square"
+        <line id={id("speedMarker")} x1={speedInner.x} y1={speedInner.y} x2={speedOuter.x} y2={speedOuter.y} stroke={theme.speedMarker} strokeWidth="5" strokeLinecap="square"
               filter={url("blueGlow")}/>
         <circle cx="1480" cy="360" r="132" fill="#020405" stroke="#7c8790" strokeWidth="2.5"/>
         <circle cx="1480" cy="360" r="122" fill={url("glass")} stroke="#252c31" strokeWidth="1"/>
@@ -239,7 +237,7 @@ const MustangDashboard: React.FC<Props> = ({ data, speedUnit }) => {
           <path d="M346 598 C383 610 433 610 474 598" fill="none" stroke="#1b2730" strokeWidth="19"/>
           <path id={id("coolantArc")} d="M346 598 C383 610 433 610 474 598" pathLength="100"
                 fill="none" stroke={url("blueBand")} strokeWidth="18" strokeDasharray={`${coolantPercent} 100`}/>
-          <g stroke="#64b7ff" strokeWidth="1.5" opacity=".75">
+          <g stroke={theme.tick} strokeWidth="1.5" opacity=".75">
             <path d="M367 602 V620 M395 605 V623 M423 604 V622 M450 601 V619"/>
           </g>
           <path d="M474 598 L480 617" stroke="#ed1b14" strokeWidth="4"/>
@@ -274,7 +272,7 @@ const MustangDashboard: React.FC<Props> = ({ data, speedUnit }) => {
           <path id={id("fuelArc")} d="M1414 599 C1452 610 1512 610 1551 599" pathLength="100"
                 fill="none" stroke={url("blueBand")} strokeWidth="18" strokeDasharray={`${fuelLevel} 100`}/>
           <path d="M1414 599 L1408 618" stroke="#ed1b14" strokeWidth="4"/>
-          <g stroke="#64b7ff" strokeWidth="1.5" opacity=".75">
+          <g stroke={theme.tick} strokeWidth="1.5" opacity=".75">
             <path d="M1445 605 V623 M1478 607 V625 M1511 605 V623 M1540 602 V620"/>
           </g>
           <text x="1577" y="615" className="label">F</text>
