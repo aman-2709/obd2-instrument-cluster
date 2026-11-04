@@ -25,6 +25,27 @@ This is a standalone repository rather than one made with GitHub's Fork button: 
 
 - **Emulator:** ELM327-emulator is pinned to v4.0.0 and started with `-i 0.0.0.0`. Without that flag it listens on loopback only inside its container, so the backend container cannot reach it. The emulator port is published on the host's loopback only.
 - **Dashboard:** the WebSocket client keeps receiving telemetry after a reconnect (it used to go silent until a page reload) and no longer leaves an orphan socket behind on unmount. The hook now has unit tests.
+- **Themes:** a green version of the instrument cluster next to the original blue one (see Versions and themes below).
+
+## 🎨 Versions and themes
+
+The instrument cluster comes in two colour versions, published as container images:
+
+| Version | Colour | Frontend image |
+|---|---|---|
+| 1.0.0 | blue | `ghcr.io/aman-2709/obd2-instrument-cluster-frontend:1.0.0` |
+| 2.0.0 | green | `ghcr.io/aman-2709/obd2-instrument-cluster-frontend:2.0.0` |
+
+![Version 1.0.0, blue](docs/images/cluster-v1-blue.png)
+![Version 2.0.0, green](docs/images/cluster-v2-green.png)
+
+```bash
+docker run --rm -p 3000:3000 ghcr.io/aman-2709/obd2-instrument-cluster-frontend:2.0.0   # green
+```
+
+The cluster shows live data from the backend on port 8000. The container compiles when it starts, so give it 20 to 30 seconds. The images are built for `linux/amd64` and `linux/arm64`, and matching `-backend` images are published with the same tags.
+
+The colour comes from `REACT_APP_CLUSTER_THEME` (`blue` or `green`). An empty or unknown value uses the default, which is green. For example, `docker run -e REACT_APP_CLUSTER_THEME=blue …` or `REACT_APP_CLUSTER_THEME=blue docker compose up` gives the blue look on a version 2 build. Version 1.0.0 predates this setting and is always blue.
 
 ## ✨ Features
 
