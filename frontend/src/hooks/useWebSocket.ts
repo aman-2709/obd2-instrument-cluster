@@ -28,38 +28,51 @@ export const useWebSocket = (): WebSocketHookReturn => {
 
   useEffect(() => {
     const wsUrl = getWebSocketUrl();
-    console.log('Connecting to WebSocket:', wsUrl);
-    ws.current = new WebSocket(wsUrl);
+    let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+    let disposed = false;
 
-    ws.current.onopen = () => {
-      console.log('WebSocket opened!');
-    };
+    // Every socket, including reconnects, gets the full set of handlers.
+    const connect = (): void => {
+      console.log('Connecting to WebSocket:', wsUrl);
+      const socket = new WebSocket(wsUrl);
+      ws.current = socket;
 
-    ws.current.onmessage = (event: MessageEvent) => {
-      try {
-        const newData: ObdData = JSON.parse(event.data);
-        setData(newData);
-        if (newData.SpeedUnit) {
-          setSpeedUnit(newData.SpeedUnit as SpeedUnit);
+      socket.onopen = () => {
+        console.log('WebSocket opened!');
+      };
+
+      socket.onmessage = (event: MessageEvent) => {
+        try {
+          const newData: ObdData = JSON.parse(event.data);
+          setData(newData);
+          if (newData.SpeedUnit) {
+            setSpeedUnit(newData.SpeedUnit as SpeedUnit);
+          }
+        } catch (e) {
+          console.error('Failed to parse message:', event.data);
         }
-      } catch (e) {
-        console.error('Failed to parse message:', event.data);
-      }
+      };
+
+      socket.onerror = (error: Event) => {
+        console.error('WebSocket connection error:', error);
+      };
+
+      socket.onclose = () => {
+        console.log('WebSocket closed');
+        if (disposed) return;
+        reconnectTimer = setTimeout(() => {
+          console.log('Attempting to reconnect...');
+          connect();
+        }, 3000);
+      };
     };
 
-    ws.current.onerror = (error: Event) => {
-      console.error('WebSocket connection error:', error);
-    };
-
-    ws.current.onclose = () => {
-      console.log('WebSocket closed');
-      setTimeout(() => {
-        console.log('Attempting to reconnect...');
-        ws.current = new WebSocket(wsUrl);
-      }, 3000);
-    };
+    connect();
 
     return () => {
+      // Stop the close we trigger here from scheduling a reconnect.
+      disposed = true;
+      clearTimeout(reconnectTimer);
       if (ws.current) {
         ws.current.close();
       }
