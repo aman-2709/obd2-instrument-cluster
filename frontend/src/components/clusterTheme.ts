@@ -36,7 +36,7 @@ export const blueTheme: ClusterTheme = {
   tint: '#07131d',
 };
 
-// Version 2, the default. Each colour is the blue above with its hue moved to green (OKLCH hue
+// Versions 2 and 3, the default. Each colour is the blue above with its hue moved to green (OKLCH hue
 // 150, 160 for the near-whites) at the same lightness and chroma, so the glow and contrast match.
 export const greenTheme: ClusterTheme = {
   name: 'green',
@@ -57,7 +57,7 @@ export const greenTheme: ClusterTheme = {
 const THEMES: Record<ClusterThemeName, ClusterTheme> = { blue: blueTheme, green: greenTheme };
 
 // The theme used when none is chosen. This is the one place a release decides its colour:
-// version 1 was blue, version 2 is green.
+// version 1 was blue, versions 2 and 3 are green.
 export const DEFAULT_THEME: ClusterThemeName = 'green';
 
 const isThemeName = (value: string): value is ClusterThemeName =>
