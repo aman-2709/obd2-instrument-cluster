@@ -23,4 +23,6 @@ services:
     environment:
       - CHOKIDAR_USEPOLLING=true
       - WATCHPACK_POLLING=true
+      # Cluster colour (blue or green). Unset or empty means the app's default theme.
+      - REACT_APP_CLUSTER_THEME
     # privileged: true
