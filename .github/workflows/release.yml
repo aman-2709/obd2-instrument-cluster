@@ -20,6 +20,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # the changelog step needs history and the previous tag
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
@@ -50,6 +52,9 @@ jobs:
         registry: ${{ env.REGISTRY }}
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up QEMU (for the linux/arm64 images)
+      uses: docker/setup-qemu-action@v3
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -95,7 +100,11 @@ jobs:
       id: changelog
       run: |
         echo "## What's Changed" > CHANGELOG.md
-        git log $(git describe --tags --abbrev=0 HEAD^)..HEAD --pretty=format:"* %s (%h)" >> CHANGELOG.md
+        if previous=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null); then
+          git log "$previous"..HEAD --pretty=format:"* %s (%h)" >> CHANGELOG.md
+        else
+          echo "Initial release." >> CHANGELOG.md
+        fi
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
