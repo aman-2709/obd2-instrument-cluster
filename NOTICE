@@ -1,0 +1,29 @@
+obd2-instrument-cluster — attribution notice
+============================================
+
+obd2-instrument-cluster is a real-time OBD2 vehicle dashboard: a .NET 8 backend that
+reads an ELM327 adapter and a React frontend that shows the readings as a
+Mustang-style instrument cluster.
+
+Origin and copyright
+--------------------
+
+This repository is a fork of https://github.com/hitmanpc/obd2dashboard,
+created and developed by Don Bowman (@hitmanpc). The upstream commit history
+is preserved in full, so his commits remain attributed to him.
+
+    obd2-instrument-cluster
+    Copyright (c) 2025 Don Bowman
+    Copyright (c) 2026 Amandeep Kirpalsingh
+
+    Released under the MIT License; see LICENSE.
+
+The MIT License requires the copyright notice and permission notice to be
+included in all copies or substantial portions of the software. Both are kept
+in LICENSE, and Don Bowman's notice must stay there.
+
+Changes since the fork point
+----------------------------
+
+The commit history shows every change made after the upstream commit
+d8d033a ("Merge pull request #27 from hitmanpc/fix/deploymentscriptUpdate").
