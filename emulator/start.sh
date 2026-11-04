@@ -19,8 +19,11 @@ echo "Starting OBD emulator..."
 # Clean up any existing process
 cleanup
 
-# Start the OBD emulator as a daemon
-python -m elm -n 35000 --daemon
+# Start the OBD emulator as a daemon.
+# -i 0.0.0.0 is required: ELM327-emulator 4.0.0+ listens on 127.0.0.1 by
+# default, which the backend container cannot reach over the Docker network.
+# Keep it on the restart calls below too.
+python -m elm -n 35000 -i 0.0.0.0 --daemon
 
 # Wait for PID file to be created
 for i in {1..10}; do
@@ -41,7 +44,7 @@ while true; do
         else
             echo "OBD emulator process (PID: $EMULATOR_PID) died, restarting..."
             cleanup
-            python -m elm -n 35000 --daemon
+            python -m elm -n 35000 -i 0.0.0.0 --daemon
             sleep 2
             if [ -f "/var/run/ELM327_emulator.pid" ]; then
                 EMULATOR_PID=$(cat /var/run/ELM327_emulator.pid)
@@ -53,7 +56,7 @@ while true; do
     else
         echo "PID file missing, restarting emulator..."
         cleanup
-        python -m elm -n 35000 --daemon
+        python -m elm -n 35000 -i 0.0.0.0 --daemon
         sleep 2
     fi
     sleep 5
