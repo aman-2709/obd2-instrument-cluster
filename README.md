@@ -93,7 +93,7 @@ See the [Quick Start Guide](QUICKSTART.md) for streamlined Raspberry Pi deployme
 
 ```bash
 # One-command deployment on Raspberry Pi
-curl -fsSL https://raw.githubusercontent.com/hitmanpc/obd2dashboard/main/deploy-pi.sh -o deploy-pi.sh
+curl -fsSL https://raw.githubusercontent.com/aman-2709/obd2-instrument-cluster/main/deploy-pi.sh -o deploy-pi.sh
 chmod +x deploy-pi.sh
 ./deploy-pi.sh
 ```

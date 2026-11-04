@@ -1,6 +1,6 @@
-# 🚗 OBD2 Dashboard - Quick Start (Raspberry Pi)
+# 🚗 OBD2 Instrument Cluster - Quick Start (Raspberry Pi)
 
-Deploy your OBD2 Dashboard on Raspberry Pi in just a few commands!
+Deploy your OBD2 Instrument Cluster on Raspberry Pi in just a few commands!
 
 ## ⚡ Quick Install
 
@@ -22,7 +22,7 @@ sudo reboot
 ### 2. Deploy the Application
 ```bash
 # Download and run deployment script
-curl -fsSL https://raw.githubusercontent.com/hitmanpc/obd2dashboard/main/deploy-pi.sh -o deploy-pi.sh
+curl -fsSL https://raw.githubusercontent.com/aman-2709/obd2-instrument-cluster/main/deploy-pi.sh -o deploy-pi.sh
 chmod +x deploy-pi.sh
 ./deploy-pi.sh
 ```
@@ -95,4 +95,4 @@ sudo ufw status
 
 **Full documentation**: [docs/raspberry-pi-deployment.md](docs/raspberry-pi-deployment.md)
 
-**Need help?** Create an issue: https://github.com/hitmanpc/obd2dashboard/issues
+**Need help?** Create an issue: https://github.com/aman-2709/obd2-instrument-cluster/issues

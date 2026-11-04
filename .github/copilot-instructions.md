@@ -1,4 +1,4 @@
-# Copilot Instructions for OBD2 Dashboard
+# Copilot Instructions for OBD2 Instrument Cluster
 
 ## Project Overview
 

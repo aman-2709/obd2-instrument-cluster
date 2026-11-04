@@ -1,7 +1,9 @@
 # Production docker-compose for Raspberry Pi deployment
+# Image repository: IMAGE_NAME (set by deploy-pi.sh), else GITHUB_REPOSITORY
+# (set on GitHub runners), else the default below.
 services:
   obd_backend:
-    image: ghcr.io/${GITHUB_REPOSITORY:-hitmanpc/obd2dashboard}-backend:latest
+    image: ghcr.io/${IMAGE_NAME:-${GITHUB_REPOSITORY:-aman-2709/obd2-instrument-cluster}}-backend:latest
     container_name: obd_backend
     environment:
       - OBD_PORT=/dev/ttyUSB0
@@ -24,7 +26,7 @@ services:
       start_period: 40s
 
   react_frontend:
-    image: ghcr.io/${GITHUB_REPOSITORY:-hitmanpc/obd2dashboard}-frontend:latest
+    image: ghcr.io/${IMAGE_NAME:-${GITHUB_REPOSITORY:-aman-2709/obd2-instrument-cluster}}-frontend:latest
     container_name: react_frontend
     ports:
       - "3000:3000"

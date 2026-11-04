@@ -47,16 +47,16 @@ jobs:
 
     - name: Copy docker-compose files to Pi
       run: |
-        scp docker-compose.yml ${{ github.event.inputs.pi_user }}@${{ github.event.inputs.pi_host }}:/home/${{ github.event.inputs.pi_user }}/obd2dashboard/
+        scp docker-compose.yml ${{ github.event.inputs.pi_user }}@${{ github.event.inputs.pi_host }}:/home/${{ github.event.inputs.pi_user }}/Documents/obd2dashboard/
         # Copy production override if it exists
         if [ -f docker-compose.prod.yml ]; then
-          scp docker-compose.prod.yml ${{ github.event.inputs.pi_user }}@${{ github.event.inputs.pi_host }}:/home/${{ github.event.inputs.pi_user }}/obd2dashboard/
+          scp docker-compose.prod.yml ${{ github.event.inputs.pi_user }}@${{ github.event.inputs.pi_host }}:/home/${{ github.event.inputs.pi_user }}/Documents/obd2dashboard/
         fi
 
     - name: Deploy application on Raspberry Pi
       run: |
         ssh ${{ github.event.inputs.pi_user }}@${{ github.event.inputs.pi_host }} << 'EOF'
-          cd /home/${{ github.event.inputs.pi_user }}/Docuements/obd2dashboard
+          cd /home/${{ github.event.inputs.pi_user }}/Documents/obd2dashboard
           
           # Pull latest ARM64 images
           export REGISTRY=${{ env.REGISTRY }}
@@ -98,4 +98,4 @@ jobs:
         echo "📍 Raspberry Pi: ${{ github.event.inputs.pi_host }}"
         echo "🌐 Frontend: http://${{ github.event.inputs.pi_host }}:3000"
         echo "🔌 Backend: http://${{ github.event.inputs.pi_host }}:8000"
-        echo "📊 OBD2 Dashboard is now running on your Raspberry Pi!"
+        echo "📊 OBD2 Instrument Cluster is now running on your Raspberry Pi!"

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# OBD2 Dashboard Deployment Script for Raspberry Pi
+# OBD2 Instrument Cluster Deployment Script for Raspberry Pi
 # Run this script directly on your Raspberry Pi for manual deployment
 
 set -e
@@ -13,13 +13,13 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-REPO_URL="https://github.com/hitmanpc/obd2dashboard.git"
+REPO_URL="https://github.com/aman-2709/obd2-instrument-cluster.git"
 DEPLOY_DIR="$HOME/obd2dashboard"
 REGISTRY="ghcr.io"
-IMAGE_NAME="hitmanpc/obd2dashboard"
+IMAGE_NAME="aman-2709/obd2-instrument-cluster"
 
-echo -e "${BLUE}🚗 OBD2 Dashboard Deployment Script${NC}"
-echo -e "${BLUE}====================================${NC}"
+echo -e "${BLUE}🚗 OBD2 Instrument Cluster Deployment Script${NC}"
+echo -e "${BLUE}============================================${NC}"
 echo ""
 
 # Check if Docker is installed
@@ -184,4 +184,4 @@ if [ -n "$OBD_DEVICES" ]; then
     echo ""
 fi
 
-echo -e "${GREEN}🚗 Your OBD2 Dashboard is ready!${NC}"
+echo -e "${GREEN}🚗 Your OBD2 Instrument Cluster is ready!${NC}"
