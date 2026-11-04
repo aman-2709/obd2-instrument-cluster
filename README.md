@@ -1,13 +1,30 @@
-# 🚗 OBD2 Dashboard
+# 🚗 OBD2 Instrument Cluster
 # ---------------------------------------------------------------------------#
 #
-#   [![CI](https://github.com/hitmanpc/obd2dashboard/actions/workflows/ci.yml/badge.svg)](https://github.com/hitmanpc/obd2dashboard/actions/workflows/ci.yml)
+#   [![CI](https://github.com/aman-2709/obd2-instrument-cluster/actions/workflows/ci.yml/badge.svg)](https://github.com/aman-2709/obd2-instrument-cluster/actions/workflows/ci.yml)
 #
 # ---------------------------------------------------------------------------
 
 ## 📋 Overview
 
-**OBD2 Dashboard** is a real-time vehicle monitoring application that provides live insights into your vehicle's performance using OBD2 data. Built with .NET 8.0 backend and React frontend, it features a Mustang-themed dashboard with WebSocket-based real-time updates.
+**OBD2 Instrument Cluster** is a real-time vehicle monitoring application that provides live insights into your vehicle's performance using OBD2 data. Built with .NET 8.0 backend and React frontend, it features a Mustang-themed dashboard with WebSocket-based real-time updates.
+
+## 🙏 About This Fork
+
+This project is a fork of [obd2dashboard](https://github.com/hitmanpc/obd2dashboard), originally created and developed by **Don Bowman** ([@hitmanpc](https://github.com/hitmanpc)).
+
+All credit for the original project goes to Don. His work forms the foundation of this fork, which I am continuing to develop by making improvements, modifying existing functionality, and introducing new features.
+
+A sincere thank you to Don for the time, effort, and dedication he has put into this project, and for sharing his work with the open-source community.
+
+**Thank you, Don, for making this possible!**
+
+This is a standalone repository rather than one made with GitHub's Fork button: the code was copied in with its full commit history, so Don's commits stay attributed to him. The original [MIT License](LICENSE) and copyright notice are kept; see also [NOTICE](NOTICE).
+
+**Changes in this fork so far**
+
+- **Emulator:** ELM327-emulator is pinned to v4.0.0 and started with `-i 0.0.0.0`. Without that flag it listens on loopback only inside its container, so the backend container cannot reach it. The emulator port is published on the host's loopback only.
+- **Dashboard:** the WebSocket client keeps receiving telemetry after a reconnect (it used to go silent until a page reload) and no longer leaves an orphan socket behind on unmount. The hook now has unit tests.
 
 ## ✨ Features
 
@@ -44,8 +61,8 @@
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/hitmanpc/obd2dashboard.git
-cd obd2dashboard
+git clone https://github.com/aman-2709/obd2-instrument-cluster.git
+cd obd2-instrument-cluster
 ```
 
 2. **Start all services** (backend, frontend, and emulator)
@@ -292,7 +309,7 @@ For more help, check the [Raspberry Pi deployment guide](docs/raspberry-pi-deplo
 ## 📁 Project Structure
 
 ```
-obd2dashboard/
+obd2-instrument-cluster/
 ├── backend/              # .NET 8.0 C# backend
 │   ├── src/
 │   │   ├── Program.cs              # Application entry point
@@ -361,8 +378,8 @@ This project is licensed under the [MIT License](./LICENSE). You are free to use
 
 ## 📞 Contact
 
-**Email**: don@donbowman.info  
-**Issues**: https://github.com/hitmanpc/obd2dashboard/issues
+**Original project**: [hitmanpc/obd2dashboard](https://github.com/hitmanpc/obd2dashboard) by Don Bowman  
+**Issues**: https://github.com/aman-2709/obd2-instrument-cluster/issues
 
 ---
 
