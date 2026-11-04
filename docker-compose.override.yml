@@ -3,7 +3,9 @@ services:
     build: ./emulator
     container_name: elm327Emulator
     ports:
-      - "35000:35000"
+      # Host loopback only: the backend reaches the emulator over the Docker
+      # network, and the emulator has no authentication.
+      - "127.0.0.1:35000:35000"
     volumes:
       - obd-virtual-port:/virtual
 

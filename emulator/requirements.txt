@@ -1,4 +1,6 @@
 requests
 pyserial
 pyserial-asyncio
-git+https://github.com/ircama/ELM327-emulator
+# Pinned: 4.0.0 changed the TCP bind default to 127.0.0.1 and added the -i
+# option that start.sh relies on. Bump deliberately, not by rebuilding.
+git+https://github.com/ircama/ELM327-emulator@v4.0.0
