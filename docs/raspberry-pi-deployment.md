@@ -1,6 +1,6 @@
 # 🚀 Manual Raspberry Pi Deployment Guide
 
-This guide will help you deploy the OBD2 Dashboard manually on your Raspberry Pi.
+This guide will help you deploy the OBD2 Instrument Cluster manually on your Raspberry Pi.
 
 ## 📋 Prerequisites
 
@@ -54,7 +54,7 @@ mkdir -p ~/Documents/obd2dashboard
 cd ~/Documents/obd2dashboard
 
 # Download the deployment script
-wget https://raw.githubusercontent.com/hitmanpc/obd2dashboard/main/deploy-pi.sh
+wget https://raw.githubusercontent.com/aman-2709/obd2-instrument-cluster/main/deploy-pi.sh
 chmod +x deploy-pi.sh
 ```
 
@@ -204,4 +204,4 @@ netstat -tlnp | grep :8000
 
 ---
 
-**Need help?** Create an issue on GitHub: https://github.com/hitmanpc/obd2dashboard/issues
+**Need help?** Create an issue on GitHub: https://github.com/aman-2709/obd2-instrument-cluster/issues

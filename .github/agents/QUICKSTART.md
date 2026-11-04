@@ -1,4 +1,4 @@
-# OBD2 Dashboard Agent Quickstart
+# OBD2 Instrument Cluster Agent Quickstart
 
 Use these custom agents for focused tasks. Pick the agent that matches the work area, then paste one of the example prompts.
 

@@ -1,6 +1,6 @@
 {
-  "short_name": "OBD2 Dashboard",
-  "name": "OBD2 Dashboard",
+  "short_name": "OBD2 Cluster",
+  "name": "OBD2 Instrument Cluster",
   "icons": [
     {
       "src": "favicon.ico",

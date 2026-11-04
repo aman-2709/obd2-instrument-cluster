@@ -87,9 +87,9 @@ jobs:
     - name: Create release archives
       run: |
         cd backend/release
-        tar -czf ../../obd2dashboard-backend-${{ steps.meta.outputs.version }}.tar.gz .
+        tar -czf ../../obd2-instrument-cluster-backend-${{ steps.meta.outputs.version }}.tar.gz .
         cd ../../frontend/build
-        tar -czf ../../obd2dashboard-frontend-${{ steps.meta.outputs.version }}.tar.gz .
+        tar -czf ../../obd2-instrument-cluster-frontend-${{ steps.meta.outputs.version }}.tar.gz .
 
     - name: Generate changelog
       id: changelog
@@ -102,7 +102,7 @@ jobs:
       with:
         body_path: CHANGELOG.md
         files: |
-          obd2dashboard-backend-${{ steps.meta.outputs.version }}.tar.gz
-          obd2dashboard-frontend-${{ steps.meta.outputs.version }}.tar.gz
+          obd2-instrument-cluster-backend-${{ steps.meta.outputs.version }}.tar.gz
+          obd2-instrument-cluster-frontend-${{ steps.meta.outputs.version }}.tar.gz
         draft: false
         prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
