@@ -1,38 +1,47 @@
-# Production docker-compose for Raspberry Pi deployment
+# Production docker-compose for Raspberry Pi deployment. Use it on its own, not merged with
+# docker-compose.yml (that one builds the dev server and bind-mounts the source):
+#
+#   OBD_VERSION=3.1.0 docker compose -f docker-compose.prod.yml up -d
+#
+# OBD_VERSION is a released version (see the table in the README). It is required: there is no
+# "latest" image. deploy-pi.sh fills it in from the newest git tag.
 # Image repository: IMAGE_NAME (set by deploy-pi.sh), else GITHUB_REPOSITORY
 # (set on GitHub runners), else the default below.
 services:
   obd_backend:
-    image: ghcr.io/${IMAGE_NAME:-${GITHUB_REPOSITORY:-aman-2709/obd2-instrument-cluster}}-backend:latest
+    image: ghcr.io/${IMAGE_NAME:-${GITHUB_REPOSITORY:-aman-2709/obd2-instrument-cluster}}-backend:${OBD_VERSION:?Set OBD_VERSION to a released version, for example OBD_VERSION=3.1.0}
     container_name: obd_backend
     environment:
-      - OBD_PORT=/dev/ttyUSB0
+      # The adapter's device, for example /dev/ttyUSB0 (USB-to-OBD2 adapters), or /dev/serial0 or
+      # /dev/ttyAMA0 (Raspberry Pi GPIO UART). Set OBD_PORT in the environment to change it.
+      - OBD_PORT=${OBD_PORT:-/dev/ttyUSB0}
       - ASPNETCORE_ENVIRONMENT=Production
-      # Use /dev/serial0 or /dev/ttyAMA0 for Raspberry Pi GPIO UART
-      # Use /dev/ttyUSB0 for USB-to-OBD2 adapters
     ports:
       - "8000:8000"
+    # privileged exposes the host's devices, so the adapter needs no `devices:` entry. An entry would
+    # stop the container from starting whenever the adapter is unplugged.
     privileged: true
-    devices:
-      - "/dev/ttyUSB0:/dev/ttyUSB0"  # Adjust based on your OBD2 adapter
     volumes:
       - ./logs:/app/logs  # Persist logs
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
+      # The image has no curl or wget and the backend has no /health route, so this only checks that
+      # port 8000 accepts connections (bash's /dev/tcp). That is all "up" can mean without a car.
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8000"]
+      interval: 10s
+      timeout: 3s
       retries: 3
-      start_period: 40s
+      start_period: 10s
 
   react_frontend:
-    image: ghcr.io/${IMAGE_NAME:-${GITHUB_REPOSITORY:-aman-2709/obd2-instrument-cluster}}-frontend:latest
+    image: ghcr.io/${IMAGE_NAME:-${GITHUB_REPOSITORY:-aman-2709/obd2-instrument-cluster}}-frontend:${OBD_VERSION:?Set OBD_VERSION to a released version, for example OBD_VERSION=3.1.0}
     container_name: react_frontend
     ports:
       - "3000:3000"
+    # Start order only. The frontend is static files and its WebSocket client retries every 3 s, so a
+    # backend that is down should leave an empty cluster on screen, not a blank page.
     depends_on:
-      obd_backend:
-        condition: service_healthy
+      - obd_backend
     restart: unless-stopped
     # Health comes from the image's own HEALTHCHECK (the nginx image has no curl).
 

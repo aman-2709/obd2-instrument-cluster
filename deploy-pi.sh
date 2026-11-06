@@ -89,35 +89,60 @@ else
 fi
 echo ""
 
+# Deploy the released images
+export REGISTRY="$REGISTRY"
+export IMAGE_NAME="$IMAGE_NAME"
+
+# Which release to run: OBD_VERSION from the environment (v3.1.0 and 3.1.0 both work), otherwise the
+# newest stable git tag. docker-compose.prod.yml has no default, so it can never run something old.
+if [ -z "${OBD_VERSION:-}" ]; then
+    git fetch --tags --quiet origin
+    OBD_VERSION=$(git describe --tags --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*' --exclude 'v*-*' 2>/dev/null || true)
+fi
+OBD_VERSION="${OBD_VERSION#v}"
+if ! [[ "$OBD_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+    echo -e "${RED}❌ Could not work out which version to deploy (got '${OBD_VERSION}').${NC}"
+    echo -e "${YELLOW}Name a release: OBD_VERSION=3.1.0 ./deploy-pi.sh${NC}"
+    exit 1
+fi
+export OBD_VERSION
+echo -e "${BLUE}Deploying version $OBD_VERSION (docker-compose.prod.yml)...${NC}"
+
+# The production file stands alone. Merging it with docker-compose.yml would pull in the dev server
+# and the source bind mounts.
+COMPOSE_ARGS="-f docker-compose.prod.yml"
+
+# Pull first. If that fails (no network, no such version) the running cluster is left alone.
+echo -e "${YELLOW}📦 Pulling the images...${NC}"
+if ! $COMPOSE_CMD $COMPOSE_ARGS pull; then
+    echo -e "${RED}❌ Could not pull the $OBD_VERSION images for $IMAGE_NAME. Nothing was stopped.${NC}"
+    echo -e "${YELLOW}Check the network, and that the version exists: https://github.com/$IMAGE_NAME/releases${NC}"
+    exit 1
+fi
+
 # Stop existing containers
 echo -e "${YELLOW}🛑 Stopping existing containers...${NC}"
 $COMPOSE_CMD down 2>/dev/null || true
 echo ""
 
-# Deploy containers (pull if available, build locally otherwise)
-export REGISTRY="$REGISTRY"
-export IMAGE_NAME="$IMAGE_NAME"
-
-COMPOSE_ARGS=""
-if [ -f "docker-compose.prod.yml" ]; then
-    echo -e "${BLUE}Using production configuration (docker-compose.prod.yml)...${NC}"
-    COMPOSE_ARGS="-f docker-compose.yml -f docker-compose.prod.yml"
-fi
-
-echo -e "${YELLOW}📦 Deploying application...${NC}"
-if $COMPOSE_CMD $COMPOSE_ARGS pull 2>/dev/null; then
-    echo -e "${YELLOW}🚀 Starting services from pulled images...${NC}"
-    $COMPOSE_CMD $COMPOSE_ARGS up -d
-else
-    echo -e "${YELLOW}⚠️  Image pull unavailable or failed. Building images locally on Raspberry Pi...${NC}"
-    $COMPOSE_CMD $COMPOSE_ARGS up --build -d
-fi
+echo -e "${YELLOW}🚀 Starting services...${NC}"
+$COMPOSE_CMD $COMPOSE_ARGS up -d
 
 echo ""
 
-# Wait for services to start
-echo -e "${YELLOW}⏳ Waiting for services to start...${NC}"
-sleep 15
+# Docker's own verdict for a container: healthy, unhealthy, starting, or missing.
+container_health() {
+    docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$1" 2>/dev/null || echo "missing"
+}
+
+# Wait for the containers to report healthy (up to 60 seconds)
+echo -e "${YELLOW}⏳ Waiting for services to become healthy...${NC}"
+for _ in $(seq 1 30); do
+    if [ "$(container_health obd_backend)" = "healthy" ] && [ "$(container_health react_frontend)" = "healthy" ]; then
+        break
+    fi
+    sleep 2
+done
 
 # Check service status
 echo -e "${BLUE}🔍 Checking service status...${NC}"
@@ -138,7 +163,7 @@ else
     FRONTEND_STATUS="❌ Failed"
 fi
 
-if curl -f http://localhost:8000 >/dev/null 2>&1; then
+if [ "$(container_health obd_backend)" = "healthy" ]; then
     echo -e "${GREEN}✅ Backend is running${NC}"
     BACKEND_STATUS="✅ Running"
 else
@@ -168,8 +193,8 @@ echo -e "${BLUE}📝 Useful commands:${NC}"
 echo -e "${YELLOW}  View logs:${NC} $COMPOSE_CMD logs -f"
 echo -e "${YELLOW}  Stop app:${NC} $COMPOSE_CMD down"
 echo -e "${YELLOW}  Restart:${NC} $COMPOSE_CMD restart"
-echo -e "${YELLOW}  Rebuild locally:${NC} $COMPOSE_CMD up --build -d"
 echo -e "${YELLOW}  Update:${NC} ./deploy-pi.sh"
+echo -e "${YELLOW}  Pick a version:${NC} OBD_VERSION=$OBD_VERSION ./deploy-pi.sh"
 echo ""
 
 # Check if OBD2 device access might be an issue

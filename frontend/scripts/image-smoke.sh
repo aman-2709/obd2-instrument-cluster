@@ -9,20 +9,11 @@
 set -uo pipefail
 
 image=${1:?usage: image-smoke.sh <image>}
-pass=0
-fail=0
 cid=""
 port=""
 
-ok() { pass=$((pass + 1)); printf '  ok    %s\n' "$1"; }
-bad() { fail=$((fail + 1)); printf '  FAIL  %s\n          %s\n' "$1" "${2:-}"; }
-
-expect_eq() { # description expected actual
-  if [ "$2" = "$3" ]; then ok "$1"; else bad "$1" "expected [$2], got [$3]"; fi
-}
-expect_contains() { # description needle haystack
-  case "$3" in *"$2"*) ok "$1" ;; *) bad "$1" "expected to contain [$2], got [$3]" ;; esac
-}
+# shellcheck source-path=SCRIPTDIR source=../../scripts/lib/smoke.sh
+. "$(dirname "${BASH_SOURCE[0]}")/../../scripts/lib/smoke.sh"
 
 stop() {
   if [ -n "$cid" ]; then docker rm -f "$cid" >/dev/null 2>&1; fi
@@ -115,6 +106,4 @@ theme_case "a backslash is rejected" "" -e 'REACT_APP_CLUSTER_THEME=blue\'
 theme_case "a non-ASCII letter is rejected" "" -e 'REACT_APP_CLUSTER_THEME=bluë'
 
 stop
-echo
-echo "$pass passed, $fail failed"
-[ "$fail" -eq 0 ]
+smoke_finish

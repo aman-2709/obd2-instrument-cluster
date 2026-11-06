@@ -108,10 +108,16 @@ docker-compose down
 
 ### Production Deployment
 
-For production deployment with nginx reverse proxy:
+The production file runs released images from GHCR. Name the version to run (from the table above); it is required, there is no `latest` image:
 ```bash
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+OBD_VERSION=3.1.0 docker compose -f docker-compose.prod.yml up -d
 ```
+
+Use the file on its own. Merged with `docker-compose.yml` it would pull in the development server and the source bind mounts. The adapter defaults to `/dev/ttyUSB0`; set `OBD_PORT` (for example `OBD_PORT=/dev/ttyACM0`) to use another device. Both containers report their health, so `docker compose -f docker-compose.prod.yml ps` shows `(healthy)` once they are up. The backend's check only confirms that port 8000 accepts connections.
+
+The nginx reverse proxy is optional and off by default. Add `--profile with-nginx` to start it; it needs `ssl/cert.pem` and `ssl/key.pem` next to the compose file.
+
+`./deploy-pi.sh` does all of this on a Raspberry Pi. It deploys the newest release tag, or the one you name: `OBD_VERSION=3.1.0 ./deploy-pi.sh`.
 
 ### Raspberry Pi Deployment
 
@@ -324,7 +330,7 @@ Configure which OBD2 parameters to query in:
 
 - ❗ **Insufficient memory**
   - Increase swap size
-  - Use production build instead of development: `docker-compose -f docker-compose.prod.yml up -d`
+  - Use the production images instead of the development server: `OBD_VERSION=3.1.0 docker compose -f docker-compose.prod.yml up -d`
 
 - ❗ **Slow performance**
   - Ensure using ARM-optimized images
