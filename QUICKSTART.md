@@ -27,35 +27,43 @@ chmod +x deploy-pi.sh
 ./deploy-pi.sh
 ```
 
+The script works in `~/obd2dashboard` (it clones the repository there on the first run) and deploys the newest release. To deploy a specific version: `OBD_VERSION=3.1.0 ./deploy-pi.sh`.
+
 ### 3. Access Your Dashboard
-- Open browser and go to: `http://[your-pi-ip]:3000`
-- Find your Pi IP with: `hostname -I`
+- On the Pi itself, open a browser and go to: `http://localhost:3000`
+- The dashboard shows data only in a browser on the Pi. From another device the page loads but stays empty for now (see Mobile Access).
 
 ## 🔌 Connect OBD2 Adapter
 
 1. **Plug in your OBD2 adapter** (USB)
 2. **Check it's detected**: `ls /dev/ttyUSB*`
-3. **If using different device**, edit the docker-compose.yml device mapping
+3. **If it is a different device** (for example `/dev/ttyACM0`, or `/dev/serial0` for the Pi's GPIO UART), name it when you deploy: `OBD_PORT=/dev/ttyACM0 ./deploy-pi.sh`. The default is `/dev/ttyUSB0`.
 
 ## 🛠️ Management Commands
 
 ```bash
-cd ~/Documents/obd2dashboard
+cd ~/obd2dashboard
 
-# View logs
-docker-compose logs -f
+# View logs (use the version you deployed; the deploy script prints it)
+OBD_VERSION=3.1.0 docker compose -f docker-compose.prod.yml logs -f
 
 # Stop application
-docker-compose down
+OBD_VERSION=3.1.0 docker compose -f docker-compose.prod.yml down
 
-# Start application
-docker-compose up -d
+# Start application (add OBD_PORT=... if your adapter is not /dev/ttyUSB0)
+OBD_VERSION=3.1.0 docker compose -f docker-compose.prod.yml up -d
 
-# Update to latest version
+# Update to the newest release
 ./deploy-pi.sh
 ```
 
+Compose needs `OBD_VERSION` for every command on this file, even `logs` and `down`.
+
 ## 📱 Mobile Access
+
+**Known limitation:** from another device the page loads, but it shows no data. The page connects to the backend at `ws://localhost:8000/ws` only when it is opened as `localhost`; from any other address it tries `ws://obd_backend:8000/ws`, a name only the containers can resolve. Until that is fixed, use a browser on the Pi itself.
+
+To load the page from a phone or tablet anyway:
 
 1. Find your Pi's IP: `hostname -I`
 2. On your phone/tablet, browse to: `http://192.168.1.XXX:3000`
@@ -77,6 +85,15 @@ sudo reboot
 ```bash
 sudo usermod -aG docker $USER
 sudo reboot
+```
+
+### Dashboard loads but shows no data?
+```bash
+# Open it in a browser on the Pi itself: http://localhost:3000
+# (other devices cannot reach the backend yet, see Mobile Access)
+
+# Then check the backend's log
+docker logs obd_backend
 ```
 
 ### Can't connect to dashboard?
