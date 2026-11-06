@@ -393,22 +393,43 @@ obd2-instrument-cluster/
 │   │   ├── Configuration/          # OBD PID configurations
 │   │   └── Services/               # ObdService, WebSocketService
 │   ├── appsettings.json           # App configuration
+│   ├── Dockerfile
 │   └── ObdDashboard.csproj        # .NET project file
 ├── frontend/             # React TypeScript frontend
 │   ├── src/
 │   │   ├── components/            # Dashboard UI components
-│   │   │   └── MustangDashboard.tsx
+│   │   │   ├── MustangDashboard.tsx   # The 1920x720 cluster layout
+│   │   │   ├── Dial.tsx               # Dial chrome shared by the RPM and speed dials
+│   │   │   ├── clusterGeometry.tsx    # Dial angles, scales and arc paths
+│   │   │   └── clusterTheme.ts        # Blue and green colour themes
 │   │   ├── hooks/                 # React hooks (WebSocket)
 │   │   └── types/                 # TypeScript definitions
+│   ├── public/
+│   │   └── config.js              # Runtime settings (cluster theme)
+│   ├── docker-entrypoint.d/       # Writes config.js from REACT_APP_CLUSTER_THEME at container start
+│   ├── scripts/                   # image-smoke.sh, the production image test
+│   ├── Dockerfile                 # dev (hot reload) and prod (nginx) targets
+│   ├── nginx.conf                 # Serves the production build
 │   └── package.json
 ├── emulator/             # OBD2 emulator for testing
 │   ├── tcp2UsbScript.sh          # Virtual serial port setup
+│   ├── start.sh
 │   └── Dockerfile
+├── scripts/              # Smoke tests
+│   ├── prod-compose-smoke.sh     # Starts docker-compose.prod.yml and checks it
+│   └── lib/smoke.sh              # Helpers shared by the smoke tests
 ├── docs/                 # Documentation
+│   ├── images/                   # Cluster screenshots, one per version
+│   ├── design/                   # Reference design and its preview
 │   └── raspberry-pi-deployment.md
-├── docker-compose.yml    # Development setup
+├── .github/              # CI, release and deploy workflows, Copilot instructions and agents
+├── docker-compose.yml             # Development stack
+├── docker-compose.override.yml    # Adds the emulator to the development stack
 ├── docker-compose.prod.yml        # Production setup
+├── nginx.conf            # Optional reverse proxy (with-nginx profile of the production setup)
 ├── deploy-pi.sh          # Raspberry Pi deployment script
+├── QUICKSTART.md         # Short Raspberry Pi guide
+├── LICENSE, NOTICE
 └── README.md
 ```
 
