@@ -21,7 +21,10 @@ This repository contains a real-time OBD2 vehicle dashboard application with:
 - `frontend/src/components/`: dashboard and gauge UI components.
 - `frontend/src/hooks/useWebSocket.ts`: WebSocket connection and client data flow.
 - `frontend/src/types/`: shared frontend TypeScript types.
+- `frontend/Dockerfile`: two targets from one install step. `dev` is the Create React App dev server with hot reload (what `docker-compose.yml` builds). `prod` is the production build served by nginx; it is the last stage, so a plain `docker build` (release and deploy workflows) produces it.
+- `frontend/nginx.conf`, `frontend/docker-entrypoint.d/`: nginx config and the start-up script of the production image. The script writes `/config.js` from `REACT_APP_CLUSTER_THEME` when the container starts (letters only; anything else means the default theme). `frontend/public/config.js` is the default that `npm start` serves.
 - `emulator/`: local emulator scripts for development without a vehicle.
+- `scripts/`, `frontend/scripts/`: smoke tests that start real containers (`prod-compose-smoke.sh`, `image-smoke.sh`, shared helpers in `scripts/lib/smoke.sh`). CI runs both; the usage is in each script's header.
 - `docs/`: deployment and operations documentation.
 
 ## WebSocket Message Contract
@@ -124,17 +127,17 @@ dotnet test backend/ObdDashboard.csproj --configuration Release
 
 ### Docker Compose
 
-From repo root:
+From repo root, the development stack (dev server with hot reload, plus the emulator: Compose merges `docker-compose.override.yml` into `docker-compose.yml` automatically):
 
 ```bash
 docker compose up --build -d
 docker compose down
 ```
 
-For production composition:
+The production file runs released images and is used **on its own**. Merged with `docker-compose.yml` it would pull in the dev server and the source bind mounts. `OBD_VERSION` is required (there is no `latest` image), and every `docker compose -f docker-compose.prod.yml` command fails without it, including `ps` and `config`:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+OBD_VERSION=3.1.0 docker compose -f docker-compose.prod.yml up -d
 ```
 
 ## Copilot Agent Guidance
@@ -154,10 +157,16 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 | Raspberry Pi USB adapter | `/dev/ttyUSB0` |
 | Raspberry Pi GPIO UART | `/dev/serial0` or `/dev/ttyAMA0` |
 
-Set via `OBD_PORT` environment variable; see `docker-compose.yml`.
+The backend reads the `OBD_PORT` environment variable, and each compose file handles it differently:
+
+- `docker-compose.yml` hard-codes `OBD_PORT=/dev/ttyUSB0`; edit the file to change it.
+- `docker-compose.override.yml` (merged in automatically by a plain `docker compose up`) sets `/virtual/usb1` for the emulator. Exporting `OBD_PORT` has no effect on either of these two files.
+- `docker-compose.prod.yml` reads `OBD_PORT` from the environment and defaults to `/dev/ttyUSB0`.
+
+The backend container is `privileged`, so it sees host devices and the compose files need no `devices:` entry.
 
 ### Known Incomplete Features
 
 Do not build on these without first implementing the missing half:
 - **Speed unit toggle**: Frontend sends `'toggle_speed_unit'` string over WebSocket, but backend never reads from the socket — it is send-only. The unit is sent with each telemetry message.
-- **Health endpoint**: `docker-compose.prod.yml` references `/health` but no such endpoint exists in `Program.cs`.
+- **Health endpoint**: the backend has no `/health` route (its only route is `/ws`; `GET /` returns 404). `docker-compose.prod.yml` no longer calls one: its backend health check only confirms that port 8000 accepts connections. Do not add checks that call `/health`. `docs/raspberry-pi-deployment.md` and the `deploy-pi.yml` and `deploy-local.yml` workflows still call one.
