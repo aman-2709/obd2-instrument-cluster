@@ -177,6 +177,46 @@ npm start
 
 The frontend will be available at http://localhost:3000
 
+## 🔬 Running the Tests
+
+### Frontend unit tests
+
+```bash
+cd frontend
+npm test -- --watchAll=false
+```
+
+With the development stack running, the same tests run inside its container, so no local `node_modules` is needed:
+
+```bash
+docker exec -e CI=true react_frontend npx react-scripts test --watchAll=false
+```
+
+### Backend
+
+CI runs `dotnet test` on `backend/ObdDashboard.csproj`, but the backend has no test project yet, so that step has nothing to run.
+
+### Container smoke tests
+
+Two scripts start real containers and check what a browser, the Docker health check and an operator would see. Both need Docker and curl.
+
+```bash
+docker build -t obd-frontend:test frontend
+frontend/scripts/image-smoke.sh obd-frontend:test
+```
+
+This checks the production frontend image, including the `REACT_APP_CLUSTER_THEME` setting.
+
+```bash
+OBD_VERSION=<tag> scripts/prod-compose-smoke.sh
+```
+
+This starts `docker-compose.prod.yml` the way a Raspberry Pi runs it, with no adapter plugged in. It never pulls: the images the compose file names for that tag must already exist locally (CI builds them from the branch under the tag `ci`). The compose file has fixed container names and publishes ports 3000 and 8000, so run the script on a clean Docker daemon, not next to the development stack.
+
+### Continuous integration
+
+`.github/workflows/ci.yml` runs four jobs: Backend (.NET 8), Frontend (React + TypeScript), Frontend image (nginx) and Production compose. The last two run the smoke tests above and lint the shell scripts with shellcheck.
+
 ## 🧪 Running with OBD2 Emulator (No Vehicle Required)
 
 ### Start OBD2 Emulator
