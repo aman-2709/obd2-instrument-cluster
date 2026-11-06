@@ -59,3 +59,22 @@ jobs:
         env:
           CI: true
 
+  # Release and deploy publish this image, and nothing else in CI builds a Docker image.
+  frontend-image:
+    name: Frontend image (nginx)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint the shell scripts
+        run: shellcheck frontend/scripts/image-smoke.sh frontend/docker-entrypoint.d/40-cluster-config.sh
+
+      - name: Build the production image
+        run: docker build --tag obd-frontend:ci frontend
+
+      - name: Smoke test the production image
+        run: frontend/scripts/image-smoke.sh obd-frontend:ci
+
+      - name: Build the dev image (docker-compose.yml builds target dev)
+        run: docker build --target dev --tag obd-frontend:ci-dev frontend
+

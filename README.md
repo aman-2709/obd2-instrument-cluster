@@ -27,28 +27,30 @@ This is a standalone repository rather than one made with GitHub's Fork button: 
 - **Dashboard:** the WebSocket client keeps receiving telemetry after a reconnect (it used to go silent until a page reload) and no longer leaves an orphan socket behind on unmount. The hook now has unit tests.
 - **Themes:** a green version of the instrument cluster next to the original blue one (see Versions and themes below).
 - **RPM dial:** the tachometer is a round dial on the left, the same size and style as the km/h dial, instead of a strip across the top. The gear indicator moves into the middle of it.
+- **Production frontend image:** the published frontend image is now a production build served by nginx (about 22 MB), instead of the React development server (about 1.26 GB, compiled on every start). `docker-compose.yml` still builds the development server for local work, with hot reload (`target: dev` in the compose file). CI builds both and smoke-tests the production image.
 
 ## 🎨 Versions and themes
 
-The instrument cluster comes in three versions, published as container images:
+The instrument cluster is published as container images. Versions 1.0.0 to 3.0.0 differ in look; 3.1.0 keeps the look of 3.0.0 and changes how the image is built.
 
 | Version | Look | Frontend image |
 |---|---|---|
 | 1.0.0 | blue | `ghcr.io/aman-2709/obd2-instrument-cluster-frontend:1.0.0` |
 | 2.0.0 | green | `ghcr.io/aman-2709/obd2-instrument-cluster-frontend:2.0.0` |
 | 3.0.0 | green, with a round RPM dial on the left | `ghcr.io/aman-2709/obd2-instrument-cluster-frontend:3.0.0` |
+| 3.1.0 | same as 3.0.0, as a production build (nginx, about 22 MB) | `ghcr.io/aman-2709/obd2-instrument-cluster-frontend:3.1.0` |
 
 ![Version 1.0.0, blue](docs/images/cluster-v1-blue.png)
 ![Version 2.0.0, green](docs/images/cluster-v2-green.png)
 ![Version 3.0.0, green with a round RPM dial](docs/images/cluster-v3-green.png)
 
 ```bash
-docker run --rm -p 3000:3000 ghcr.io/aman-2709/obd2-instrument-cluster-frontend:3.0.0   # green, round RPM dial
+docker run --rm -p 3000:3000 ghcr.io/aman-2709/obd2-instrument-cluster-frontend:3.1.0   # green, round RPM dial
 ```
 
-The cluster shows live data from the backend on port 8000. The container compiles when it starts, so give it 20 to 30 seconds. The images are built for `linux/amd64` and `linux/arm64`, and matching `-backend` images are published with the same tags.
+The cluster shows live data from the backend on port 8000. The 3.1.0 image serves a production build and answers almost at once. The 1.0.0 to 3.0.0 images run the React development server, so they are about 1.26 GB and compile when they start; give those a few seconds, or up to 30 on slow hardware. The images are built for `linux/amd64` and `linux/arm64`, and matching `-backend` images are published with the same tags.
 
-The colour comes from `REACT_APP_CLUSTER_THEME` (`blue` or `green`). An empty or unknown value uses the default, which is green. For example, `docker run -e REACT_APP_CLUSTER_THEME=blue …` or `REACT_APP_CLUSTER_THEME=blue docker compose up` gives the blue look on a version 2 or 3 build. Version 1.0.0 predates this setting and is always blue.
+The colour comes from `REACT_APP_CLUSTER_THEME` (`blue` or `green`). An empty or unknown value uses the default, which is green. For example, `docker run -e REACT_APP_CLUSTER_THEME=blue …` or `REACT_APP_CLUSTER_THEME=blue docker compose up` gives the blue look on a version 2.0.0 or newer build. Version 1.0.0 predates this setting and is always blue. The 3.1.0 image reads the variable when the container starts, so you do not need to rebuild it; it accepts letters only, and anything else is ignored and gives the default.
 
 ## ✨ Features
 

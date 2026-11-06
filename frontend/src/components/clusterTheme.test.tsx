@@ -54,9 +54,16 @@ const bandStops = (container: HTMLElement): Array<[string | null, string | null]
 
 const data = { RPM: '3500', Speed: '100', Gear: '4', FuelLevel: '65', CoolantTemp: '195' };
 
+// What the production image writes to /config.js at container start. Typed loosely on purpose:
+// it is a file anyone can edit, so the app must cope with any value.
+const setRuntimeConfig = (config: unknown) => {
+  window.__CLUSTER_CONFIG__ = config as Window['__CLUSTER_CONFIG__'];
+};
+
 describe('cluster themes', () => {
   afterEach(() => {
     delete process.env.REACT_APP_CLUSTER_THEME;
+    delete window.__CLUSTER_CONFIG__;
   });
 
   describe('blue (version 1)', () => {
@@ -152,6 +159,57 @@ describe('cluster themes', () => {
       process.env.REACT_APP_CLUSTER_THEME = 'orange';
       expect(activeTheme()).toBe(resolveTheme(DEFAULT_THEME));
     });
+
+    describe('runtime config (window.__CLUSTER_CONFIG__, written by the production image)', () => {
+      test.each(['blue', 'BLUE', '  blue  '])('follows a runtime theme of %j', (theme) => {
+        setRuntimeConfig({ theme });
+        expect(activeTheme()).toBe(blueTheme);
+      });
+
+      // Green is also the default, so it only proves the runtime value is read when it
+      // has to beat a different build-time value.
+      test.each([
+        ['blue', 'green', blueTheme],
+        ['green', 'blue', greenTheme],
+      ])('a runtime theme of %j beats a build-time REACT_APP_CLUSTER_THEME of %j', (runtime, buildTime, expected) => {
+        process.env.REACT_APP_CLUSTER_THEME = buildTime;
+        setRuntimeConfig({ theme: runtime });
+        expect(activeTheme()).toBe(expected);
+      });
+
+      test.each([
+        ['an empty theme (what npm start serves)', { theme: '' }],
+        ['no theme key', {}],
+        ['no config at all', undefined],
+        ['a null config', null],
+      ])('falls back to REACT_APP_CLUSTER_THEME for %s', (_label, config) => {
+        process.env.REACT_APP_CLUSTER_THEME = 'blue';
+        setRuntimeConfig(config);
+        expect(activeTheme()).toBe(blueTheme);
+      });
+
+      test.each([
+        ['an unknown name', 'orange'],
+        ['an object key name', 'constructor'],
+        ['__proto__', '__proto__'],
+      ])('uses the default theme for %s, not the build-time value', (_label, theme) => {
+        process.env.REACT_APP_CLUSTER_THEME = 'blue';
+        setRuntimeConfig({ theme });
+        expect(activeTheme()).toBe(resolveTheme(DEFAULT_THEME));
+      });
+
+      test.each([
+        ['a number', 42],
+        ['an object', { name: 'blue' }],
+        ['an array', ['blue']],
+        ['a boolean', true],
+        ['null', null],
+      ])('does not throw on %s as the theme, and falls back to the build-time value', (_label, theme) => {
+        process.env.REACT_APP_CLUSTER_THEME = 'blue';
+        setRuntimeConfig({ theme });
+        expect(activeTheme()).toBe(blueTheme);
+      });
+    });
   });
 
   describe('MustangDashboard rendering', () => {
@@ -216,6 +274,20 @@ describe('cluster themes', () => {
       const { container } = render(<MustangDashboard data={data} speedUnit="km/h" />);
 
       expect(bandStops(container)).toEqual(blueTheme.band.map(([offset, color]) => [offset, color]));
+    });
+
+    test('follows the runtime config when no theme is passed', () => {
+      setRuntimeConfig({ theme: 'blue' });
+      const { container } = render(<MustangDashboard data={data} speedUnit="km/h" />);
+
+      expect(bandStops(container)).toEqual(blueTheme.band.map(([offset, color]) => [offset, color]));
+    });
+
+    test('an explicit theme wins over the runtime config', () => {
+      setRuntimeConfig({ theme: 'blue' });
+      const { container } = render(<MustangDashboard data={data} speedUnit="km/h" theme={greenTheme} />);
+
+      expect(bandStops(container)).toEqual(greenTheme.band.map(([offset, color]) => [offset, color]));
     });
 
     test('an explicit theme wins over REACT_APP_CLUSTER_THEME', () => {

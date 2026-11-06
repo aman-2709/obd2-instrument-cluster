@@ -70,6 +70,21 @@ export const resolveTheme = (name?: string): ClusterTheme => {
   return THEMES[isThemeName(key) ? key : DEFAULT_THEME];
 };
 
-// Read at call time. In a Create React App build the variable is fixed when the app is built or
-// the dev server starts.
-export const activeTheme = (): ClusterTheme => resolveTheme(process.env.REACT_APP_CLUSTER_THEME);
+declare global {
+  interface Window {
+    // Set by /config.js. The production image writes that file when the container starts
+    // (frontend/docker-entrypoint.d), and `npm start` serves public/config.js with an empty theme.
+    // `unknown` because anyone can edit the file: only a non-empty string counts.
+    __CLUSTER_CONFIG__?: { theme?: unknown } | null;
+  }
+}
+
+const runtimeTheme = (): string | undefined => {
+  const theme = window.__CLUSTER_CONFIG__?.theme;
+  return typeof theme === 'string' && theme !== '' ? theme : undefined;
+};
+
+// Read at call time. A runtime theme (the production image) wins over REACT_APP_CLUSTER_THEME, which
+// Create React App fixes when the app is built or the dev server starts.
+export const activeTheme = (): ClusterTheme =>
+  resolveTheme(runtimeTheme() ?? process.env.REACT_APP_CLUSTER_THEME);
