@@ -11,7 +11,11 @@ services:
     privileged: true
 
   react_frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      # The dev server with hot reload. Without a target, Docker builds the last stage: the
+      # production nginx image.
+      target: dev
     container_name: react_frontend
     ports:
       - "3000:3000"

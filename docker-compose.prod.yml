@@ -34,12 +34,7 @@ services:
       obd_backend:
         condition: service_healthy
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+    # Health comes from the image's own HEALTHCHECK (the nginx image has no curl).
 
   # Optional: Reverse proxy for production
   nginx:

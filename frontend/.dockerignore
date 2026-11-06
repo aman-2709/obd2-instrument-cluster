@@ -1,0 +1,6 @@
+# Keep the host's installs and build output out of the image: `COPY . .` would overwrite the
+# container's own node_modules (possibly built for another OS or CPU).
+node_modules
+build
+.git
+npm-debug.log*
