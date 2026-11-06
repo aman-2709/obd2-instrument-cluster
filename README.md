@@ -28,6 +28,7 @@ This is a standalone repository rather than one made with GitHub's Fork button: 
 - **Themes:** a green version of the instrument cluster next to the original blue one (see Versions and themes below).
 - **RPM dial:** the tachometer is a round dial on the left, the same size and style as the km/h dial, instead of a strip across the top. The gear indicator moves into the middle of it.
 - **Production frontend image:** the published frontend image is now a production build served by nginx (about 22 MB), instead of the React development server (about 1.26 GB, compiled on every start). `docker-compose.yml` still builds the development server for local work, with hot reload (`target: dev` in the compose file). CI builds both and smoke-tests the production image.
+- **Production compose file:** `docker-compose.prod.yml` starts on its own. `OBD_VERSION` is required, both containers report their health, and the adapter needs no `devices:` entry. `deploy-pi.sh` deploys a released version, and CI starts the file and smoke-tests it.
 
 ## 🎨 Versions and themes
 
@@ -65,8 +66,8 @@ The colour comes from `REACT_APP_CLUSTER_THEME` (`blue` or `green`). An empty or
 ## 🛠️ Prerequisites
 
 - ![.NET](https://img.shields.io/badge/.NET-8.0-purple) for backend
-- ![Node.js](https://img.shields.io/badge/Node.js-18+-green) for frontend
-- ![React](https://img.shields.io/badge/React-18+-lightblue) with TypeScript
+- ![Node.js](https://img.shields.io/badge/Node.js-20+-green) for frontend
+- ![React](https://img.shields.io/badge/React-19-lightblue) with TypeScript
 - ![Python](https://img.shields.io/badge/Python-3.8+-blue) (for OBD2 emulator only)
 - [![OBD2 Emulator](https://img.shields.io/badge/ELM327-emulator-blue)](https://github.com/Ircama/ELM327-emulator) (optional, for testing)
 - [socat](http://www.dest-unreach.org/socat/) (for virtual serial port emulation)
@@ -76,7 +77,7 @@ The colour comes from `REACT_APP_CLUSTER_THEME` (`blue` or `green`). An empty or
 ## 🏗️ Architecture
 
 - **Backend**: .NET 8.0 C# with WebSocket communication for real-time data streaming
-- **Frontend**: React 18 with TypeScript and custom dashboard components
+- **Frontend**: React 19 with TypeScript and custom dashboard components
 - **Communication**: AT command manager for OBD2 protocol handling
 - **Deployment**: Docker Compose for containerized services
 - **Target Platforms**: Linux (x64, ARM), Raspberry Pi, Windows (development)
@@ -91,24 +92,28 @@ git clone https://github.com/aman-2709/obd2-instrument-cluster.git
 cd obd2-instrument-cluster
 ```
 
-2. **Start all services** (backend, frontend, and emulator)
+2. **Start the development stack** (backend, frontend with hot reload, and the ELM327 emulator)
 ```bash
-docker-compose up --build -d
+docker compose up --build -d
 ```
+
+Compose merges `docker-compose.override.yml` into `docker-compose.yml` automatically; that is where the emulator comes from. To run the released images instead, see Production Deployment.
 
 3. **Access the dashboard**
 - Frontend: http://localhost:3000
-- Backend WebSocket: ws://localhost:8000
+- Backend WebSocket: ws://localhost:8000/ws
+
+Open the dashboard in a browser on the machine that runs the containers. From another device the page loads but shows no data yet: it connects to `ws://localhost:8000/ws` only when it is opened as `localhost`, and to `ws://obd_backend:8000/ws` (a name only the containers can resolve) from any other address.
 
 ### Stop Services
 
 ```bash
-docker-compose down
+docker compose down
 ```
 
 ### Production Deployment
 
-The production file runs released images from GHCR. Name the version to run (from the table above); it is required, there is no `latest` image:
+The production file runs released images from GHCR. Name the version to run (from the table above; the examples use 3.1.0); it is required, there is no `latest` image:
 ```bash
 OBD_VERSION=3.1.0 docker compose -f docker-compose.prod.yml up -d
 ```
@@ -117,7 +122,7 @@ Use the file on its own. Merged with `docker-compose.yml` it would pull in the d
 
 The nginx reverse proxy is optional and off by default. Add `--profile with-nginx` to start it; it needs `ssl/cert.pem` and `ssl/key.pem` next to the compose file.
 
-`./deploy-pi.sh` does all of this on a Raspberry Pi. It deploys the newest release tag, or the one you name: `OBD_VERSION=3.1.0 ./deploy-pi.sh`.
+`./deploy-pi.sh` does all of this on a Raspberry Pi. It works in `~/obd2dashboard` (cloning the repository there on the first run) and deploys the newest release tag, or the one you name: `OBD_VERSION=3.1.0 ./deploy-pi.sh`.
 
 ### Raspberry Pi Deployment
 
@@ -214,25 +219,22 @@ This script will:
 
 1. **Connect your ELM327 OBD2 adapter** via USB to your computer/Raspberry Pi
 2. **Find the device**: `ls /dev/ttyUSB*` or `ls /dev/ttyACM*`
-3. **Set the OBD_PORT environment variable**:
-   ```bash
-   export OBD_PORT=/dev/ttyUSB0
-   ```
-4. **Update docker-compose.yml** to map the correct device:
-   ```yaml
-   devices:
-     - "/dev/ttyUSB0:/dev/ttyUSB0"
-   ```
+3. **Point the backend at it.** The backend reads `OBD_PORT`, and each way of starting the stack sets it differently:
+   - Released images (`docker-compose.prod.yml`): set it in the environment. The default is `/dev/ttyUSB0`.
+     ```bash
+     OBD_PORT=/dev/ttyACM0 OBD_VERSION=3.1.0 docker compose -f docker-compose.prod.yml up -d
+     ```
+   - Development stack: plain `docker compose up` adds the emulator through `docker-compose.override.yml`, which sets `OBD_PORT=/virtual/usb1`, so your adapter would not be used. Name the base file to skip the override, and edit the `OBD_PORT` line in `docker-compose.yml` if your adapter is not `/dev/ttyUSB0`:
+     ```bash
+     docker compose -f docker-compose.yml up --build -d
+     ```
+
+The backend container runs privileged, so it sees the host's devices and needs no `devices:` entry. (An entry would stop the container from starting whenever the adapter is unplugged.)
 
 ## ✅ Verify Installation
 
 ### Check Backend
-Open your browser and navigate to:
-```
-http://localhost:8000
-```
-
-You should see WebSocket connection status.
+The backend has no web page: opening `http://localhost:8000` returns 404. Its only route is the WebSocket at `ws://localhost:8000/ws`, which the dashboard connects to, so live values on the dashboard mean the backend is working.
 
 ### Check Frontend
 Open your browser and navigate to:
@@ -242,7 +244,7 @@ http://localhost:3000
 
 You should see the Mustang-themed dashboard:
 
-![Mustang Dashboard](/docs/design/dashboard-preview.png)
+![Mustang Dashboard](docs/images/cluster-v3-green.png)
 
 ## 🔧 Configuration
 
@@ -295,7 +297,7 @@ Configure which OBD2 parameters to query in:
 - ❗ **Backend won't start**
   - Verify .NET 8.0 SDK is installed: `dotnet --version`
   - Check for port conflicts on port 8000
-  - Review logs: `docker-compose logs obd_backend`
+  - Review logs: `docker compose logs obd_backend`
   - Ensure serial port device is accessible
 
 - ❗ **WebSocket connection failed**
@@ -312,6 +314,7 @@ Configure which OBD2 parameters to query in:
   - Check for port conflicts on port 3000
 
 - ❗ **No data displayed**
+  - Is the page open on another device? Data only shows in a browser on the machine that runs the backend (see Quick Start)
   - Verify WebSocket connection in browser console
   - Check backend logs for OBD2 communication errors
   - Ensure OBD2 adapter/emulator is responding
@@ -323,8 +326,8 @@ Configure which OBD2 parameters to query in:
   - Reboot system: `sudo reboot`
 
 - ❗ **Cannot access devices in container**
-  - Verify device mapping in docker-compose.yml
-  - Use `--privileged` flag if necessary (not recommended for production)
+  - Check that `OBD_PORT` is the adapter's device (see Connecting to Real OBD2 Adapter). The compose files run the backend privileged, so no device mapping is needed
+  - Starting the backend with plain `docker run`? Pass the device with `--device /dev/ttyUSB0` (or `--privileged`, not recommended for production)
 
 ### Raspberry Pi Specific
 
